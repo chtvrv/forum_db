@@ -1,0 +1,1 @@
+psql -h localhost -d forum_db -U forum_user -f create_database.sql

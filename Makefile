@@ -2,6 +2,11 @@ PROJECT_DIR := ${CURDIR}
 DOCUMENTATION_CONTAINER_NAME=documentation_db
 DOCUMENTATION_FILE=swagger.yml
 
+
+# кодогенерация
+easyjson:
+	go generate ./...
+
 # документация
 doc-prepare:
 	npm install speccy -g
@@ -13,6 +18,3 @@ doc-host:
 doc-stop:
 	docker stop ${DOCUMENTATION_CONTAINER_NAME}
 	docker rm ${DOCUMENTATION_CONTAINER_NAME}
-
-.PHONY:
-	start stop
