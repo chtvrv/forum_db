@@ -20,15 +20,15 @@ func CreateHandler(router *echo.Echo, usecase user.Usecase) {
 		Usecase: usecase,
 	}
 
-	router.POST("/user/:nickname/create", handler.Create, middleware.ReadUserNickname, middleware.ReadBody)
-
+	router.POST("/api/user/:nickname/create", handler.Create, middleware.ReadUserNickname, middleware.ReadBody, middleware.Headers)
+	router.GET("/api/user/:nickname/profile", handler.GetUser, middleware.ReadUserNickname, middleware.Headers)
+	router.POST("/api/user/:nickname/profile", handler.Update, middleware.ReadUserNickname, middleware.ReadBody, middleware.Headers)
 }
 
 func (userHandler *UserHandler) Create(ctx echo.Context) error {
 	user := models.User{Nickname: ctx.Get("nickname").(string)}
 	userBody := ctx.Get("body").([]byte)
 	err := user.UnmarshalJSON(userBody)
-
 	if err != nil {
 		log.Error(err)
 		return ctx.NoContent(http.StatusInternalServerError)
@@ -75,5 +75,49 @@ func (userHandler *UserHandler) Create(ctx echo.Context) error {
 	}
 	// Незарегистрированная ошибка
 	log.Error(err)
-	return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+	return ctx.JSON(errors.ResolveErrorToCode(err), err.Error())
+}
+
+func (userHandler *UserHandler) GetUser(ctx echo.Context) error {
+	nickname := ctx.Get("nickname").(string)
+
+	user, err := userHandler.Usecase.GetUserByNickname(nickname)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+	}
+
+	response, err := user.MarshalJSON()
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+	return ctx.String(http.StatusOK, string(response))
+}
+
+func (userHandler *UserHandler) Update(ctx echo.Context) error {
+	// var updatedUser *models.User
+	// updatedUser.UnmarshalJSON(ctx.Get("body").([]byte))
+	// updatedUser.Nickname = ctx.Get("nickname").(string)
+
+	updatedUser := models.User{Nickname: ctx.Get("nickname").(string)}
+	userBody := ctx.Get("body").([]byte)
+	err := updatedUser.UnmarshalJSON(userBody)
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+
+	err = userHandler.Usecase.Update(&updatedUser)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+	}
+
+	response, err := updatedUser.MarshalJSON()
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+	return ctx.String(http.StatusOK, string(response))
 }

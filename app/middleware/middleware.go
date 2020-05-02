@@ -32,3 +32,10 @@ func ReadUserNickname(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(ctx)
 	}
 }
+
+func Headers(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		return next(ctx)
+	}
+}

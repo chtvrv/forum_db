@@ -3,6 +3,7 @@ package usecase
 import (
 	"github.com/chtvrv/forum_db/app/models"
 	"github.com/chtvrv/forum_db/app/user"
+	"github.com/chtvrv/forum_db/pkg/errors"
 	"github.com/labstack/gommon/log"
 )
 
@@ -39,4 +40,23 @@ func (usecase *UserUsecase) GetUserByEmail(email string) (*models.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+func (usecase *UserUsecase) Update(updatedUser *models.User) error {
+	oldUser, _ := usecase.userRepo.GetUserByNickname(updatedUser.Nickname)
+	if oldUser == nil {
+		return errors.ErrUserNotFound
+	}
+
+	userWithThisEmail, _ := usecase.userRepo.GetUserByEmail(updatedUser.Email)
+	if userWithThisEmail != nil && userWithThisEmail.Nickname != oldUser.Nickname {
+		return errors.ErrConflict
+	}
+
+	err := usecase.userRepo.Update(updatedUser)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	return nil
 }
