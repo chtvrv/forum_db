@@ -22,3 +22,21 @@ func (usecase *UserUsecase) Create(user *models.User) error {
 	}
 	return nil
 }
+
+func (usecase *UserUsecase) GetUserByNickname(nickname string) (*models.User, error) {
+	user, err := usecase.userRepo.GetUserByNickname(nickname)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return user, nil
+}
+
+func (usecase *UserUsecase) GetUserByEmail(email string) (*models.User, error) {
+	user, err := usecase.userRepo.GetUserByEmail(email)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return user, nil
+}
