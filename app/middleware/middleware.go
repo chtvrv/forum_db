@@ -33,6 +33,18 @@ func ReadUserNickname(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func ReadForumSlug(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		var slug string
+		_, err := fmt.Sscan(ctx.Param("slug"), &slug)
+		if err != nil {
+			return ctx.NoContent(http.StatusBadRequest)
+		}
+		ctx.Set("slug", slug)
+		return next(ctx)
+	}
+}
+
 func Headers(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)

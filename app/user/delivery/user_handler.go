@@ -96,10 +96,6 @@ func (userHandler *UserHandler) GetUser(ctx echo.Context) error {
 }
 
 func (userHandler *UserHandler) Update(ctx echo.Context) error {
-	// var updatedUser *models.User
-	// updatedUser.UnmarshalJSON(ctx.Get("body").([]byte))
-	// updatedUser.Nickname = ctx.Get("nickname").(string)
-
 	updatedUser := models.User{Nickname: ctx.Get("nickname").(string)}
 	userBody := ctx.Get("body").([]byte)
 	err := updatedUser.UnmarshalJSON(userBody)
