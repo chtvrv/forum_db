@@ -76,7 +76,7 @@ func (forumStore *ForumStore) GetThreadsBySlug(slug string, query models.GetThre
 
 	defer result.Close()
 
-	var threads models.Threads
+	threads := make(models.Threads, 0)
 	for result.Next() {
 		var thread models.Thread
 		slug := &pgtype.Varchar{}

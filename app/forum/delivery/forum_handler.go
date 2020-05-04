@@ -37,7 +37,7 @@ func (forumHandler *ForumHandler) Create(ctx echo.Context) error {
 		return ctx.NoContent(http.StatusInternalServerError)
 	}
 
-	err = forumHandler.Usecase.Create(&forum)
+	err, msg := forumHandler.Usecase.Create(&forum)
 	// Успешно создали
 	if err == nil {
 		response, err := forum.MarshalJSON()
@@ -49,13 +49,17 @@ func (forumHandler *ForumHandler) Create(ctx echo.Context) error {
 	}
 	// Конфликт
 	if err == errors.ErrConflict {
-		previousForum, _ := forumHandler.Usecase.GetForumBySlug(forum.Slug)
+		previousForum, _, _ := forumHandler.Usecase.GetForumBySlug(forum.Slug)
 		response, err := previousForum.MarshalJSON()
 		if err != nil {
 			log.Error(err)
 			return ctx.NoContent(http.StatusInternalServerError)
 		}
 		return ctx.String(http.StatusConflict, string(response))
+	}
+	//Нет пользователя
+	if err == errors.ErrNoRows {
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
 	}
 	// Незарегистрированная ошибка
 	log.Error(err)
@@ -64,10 +68,10 @@ func (forumHandler *ForumHandler) Create(ctx echo.Context) error {
 
 func (forumHandler *ForumHandler) Get(ctx echo.Context) error {
 	slug := ctx.Get("slug").(string)
-	forum, err := forumHandler.Usecase.GetForumBySlug(slug)
+	forum, err, msg := forumHandler.Usecase.GetForumBySlug(slug)
 	if err != nil {
 		log.Error(err)
-		return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
 	}
 
 	response, err := forum.MarshalJSON()
@@ -82,10 +86,10 @@ func (forumHandler *ForumHandler) GetThreads(ctx echo.Context) error {
 	query := ctx.Get("threadsQuery").(models.GetThreadsQuery)
 
 	forumSlug := ctx.Get("slug").(string)
-	threads, err := forumHandler.Usecase.GetThreadsBySlug(forumSlug, query)
+	threads, err, msg := forumHandler.Usecase.GetThreadsBySlug(forumSlug, query)
 	if err != nil {
 		log.Error(err)
-		return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
 	}
 
 	response, err := (*threads).MarshalJSON()
@@ -93,5 +97,6 @@ func (forumHandler *ForumHandler) GetThreads(ctx echo.Context) error {
 		log.Error(err)
 		return ctx.NoContent(http.StatusInternalServerError)
 	}
+
 	return ctx.String(http.StatusOK, string(response))
 }

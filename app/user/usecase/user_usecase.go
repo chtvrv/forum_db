@@ -42,21 +42,21 @@ func (usecase *UserUsecase) GetUserByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
-func (usecase *UserUsecase) Update(updatedUser *models.User) error {
+func (usecase *UserUsecase) Update(updatedUser *models.User) (error, *errors.Message) {
 	oldUser, _ := usecase.userRepo.GetUserByNickname(updatedUser.Nickname)
 	if oldUser == nil {
-		return errors.ErrUserNotFound
+		return errors.ErrUserNotFound, errors.CreateMessageNotFoundUser(updatedUser.Nickname)
 	}
 
 	userWithThisEmail, _ := usecase.userRepo.GetUserByEmail(updatedUser.Email)
 	if userWithThisEmail != nil && userWithThisEmail.Nickname != oldUser.Nickname {
-		return errors.ErrConflict
+		return errors.ErrConflict, errors.CreateMessageConflictEmail(userWithThisEmail.Nickname)
 	}
 
 	err := usecase.userRepo.Update(updatedUser, oldUser)
 	if err != nil {
 		log.Error(err)
-		return err
+		return err, nil
 	}
-	return nil
+	return nil, nil
 }

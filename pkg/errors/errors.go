@@ -5,6 +5,28 @@ import (
 	"net/http"
 )
 
+type Message struct {
+	message string `json:"message"`
+}
+
+func CreateMessageNotFoundUser(nickname string) *Message {
+	return &Message{
+		message: "Can't find user by nickname: " + nickname,
+	}
+}
+
+func CreateMessageConflictEmail(nickname string) *Message {
+	return &Message{
+		message: "This email is already registered by user: " + nickname,
+	}
+}
+
+func CreateMessageNotFoundForum(slug string) *Message {
+	return &Message{
+		message: "Can't find forum with slug: 1e_gBYzSkiams: " + slug,
+	}
+}
+
 const (
 	Internal     = "Internal error"
 	Conflict     = "Conflict with exists data"

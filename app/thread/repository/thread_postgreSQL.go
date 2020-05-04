@@ -20,11 +20,11 @@ func (threadStore *ThreadStore) Create(thread *models.Thread) error {
 	// slug трэда уникален, но при этом опционален
 	var err error
 	if thread.Slug == "" {
-		err = threadStore.dbConn.QueryRow(`INSERT INTO threads (title, author, forum, message) VALUES ($1, $2, $3, $4) RETURNING id`,
-			thread.Title, thread.Author, thread.Forum, thread.Message).Scan(&thread.ID)
+		err = threadStore.dbConn.QueryRow(`INSERT INTO threads (title, author, forum, message, created) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			thread.Title, thread.Author, thread.Forum, thread.Message, thread.Created).Scan(&thread.ID)
 	} else {
-		err = threadStore.dbConn.QueryRow(`INSERT INTO threads (title, author, forum, message, slug) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			thread.Title, thread.Author, thread.Forum, thread.Message, thread.Slug).Scan(&thread.ID)
+		err = threadStore.dbConn.QueryRow(`INSERT INTO threads (title, author, forum, message, created, slug) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+			thread.Title, thread.Author, thread.Forum, thread.Message, thread.Created, thread.Slug).Scan(&thread.ID)
 	}
 
 	if err != nil {

@@ -84,7 +84,8 @@ func (userHandler *UserHandler) GetUser(ctx echo.Context) error {
 	user, err := userHandler.Usecase.GetUserByNickname(nickname)
 	if err != nil {
 		log.Error(err)
-		return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+		//return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+		return ctx.JSON(errors.ResolveErrorToCode(err), errors.CreateMessageNotFoundUser(nickname))
 	}
 
 	response, err := user.MarshalJSON()
@@ -104,10 +105,11 @@ func (userHandler *UserHandler) Update(ctx echo.Context) error {
 		return ctx.NoContent(http.StatusInternalServerError)
 	}
 
-	err = userHandler.Usecase.Update(&updatedUser)
+	err, msg := userHandler.Usecase.Update(&updatedUser)
 	if err != nil {
 		log.Error(err)
-		return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+		//return ctx.JSON(errors.ResolveErrorToCode(err), err.Error())
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
 	}
 
 	response, err := updatedUser.MarshalJSON()
