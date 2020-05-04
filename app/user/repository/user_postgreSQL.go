@@ -67,13 +67,7 @@ func (userStore *UserStore) GetUserByEmail(email string) (*models.User, error) {
 	return &user, nil
 }
 
-func (userStore *UserStore) Update(updatedUser *models.User) error {
-	oldUser, err := userStore.GetUserByNickname(updatedUser.Nickname)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
+func (userStore *UserStore) Update(updatedUser *models.User, oldUser *models.User) error {
 	if updatedUser.Fullname == "" && updatedUser.About == "" && updatedUser.Email == "" {
 		*updatedUser = *oldUser
 		return nil
@@ -91,7 +85,7 @@ func (userStore *UserStore) Update(updatedUser *models.User) error {
 		oldUser.About = updatedUser.About
 	}
 
-	_, err = userStore.dbConn.Exec("UPDATE users SET fullname = $1, email = $2, about = $3 WHERE nickname = $4",
+	_, err := userStore.dbConn.Exec("UPDATE users SET fullname = $1, email = $2, about = $3 WHERE nickname = $4",
 		oldUser.Fullname, oldUser.Email, oldUser.About, oldUser.Nickname)
 	if err != nil {
 		log.Error(err)

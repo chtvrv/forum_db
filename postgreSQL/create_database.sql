@@ -23,3 +23,16 @@ create table forum_user (
     nickname  citext not null references users (nickname) collate "C",
     PRIMARY KEY (slug, nickname)
 );
+
+/* ВЕТКА ОБСУЖДЕНИЯ */
+drop table if exists threads;
+create table threads (
+    id         serial      not null primary key,
+    title      text        not null,
+    author     citext      not null references users (nickname) collate "C",
+    forum      citext      not null references forums (slug) collate "C",
+    message    text,
+    votes      integer     default 0,
+    slug       citext      default null unique collate "C",
+    created    timestamptz default current_timestamp
+);

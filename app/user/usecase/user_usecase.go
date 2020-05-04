@@ -53,7 +53,7 @@ func (usecase *UserUsecase) Update(updatedUser *models.User) error {
 		return errors.ErrConflict
 	}
 
-	err := usecase.userRepo.Update(updatedUser)
+	err := usecase.userRepo.Update(updatedUser, oldUser)
 	if err != nil {
 		log.Error(err)
 		return err

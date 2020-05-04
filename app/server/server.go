@@ -15,6 +15,10 @@ import (
 	forumRepository "github.com/chtvrv/forum_db/app/forum/repository"
 	forumUsecase "github.com/chtvrv/forum_db/app/forum/usecase"
 
+	threadHandler "github.com/chtvrv/forum_db/app/thread/delivery"
+	threadRepository "github.com/chtvrv/forum_db/app/thread/repository"
+	threadUsecase "github.com/chtvrv/forum_db/app/thread/usecase"
+
 	config "github.com/chtvrv/forum_db/pkg/config"
 )
 
@@ -29,6 +33,7 @@ func (server *Server) Run() {
 	router.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
+	router.Use(middleware.Recover())
 
 	postgresConn, err := pgx.NewConnPool(server.configReader.GetDBConn())
 	if err != nil {
@@ -44,6 +49,11 @@ func (server *Server) Run() {
 	fRepository := forumRepository.CreateRepository(postgresConn)
 	fUsecase := forumUsecase.CreateUsecase(fRepository, uRepository)
 	forumHandler.CreateHandler(router, fUsecase)
+
+	// Ветка обсуждения
+	tRepository := threadRepository.CreateRepository(postgresConn)
+	tUsecase := threadUsecase.CreateUsecase(tRepository, uRepository, fRepository)
+	threadHandler.CreateHandler(router, tUsecase)
 
 	if err := router.Start(server.configReader.GetServerConn()); err != nil {
 		log.Fatal(err)
