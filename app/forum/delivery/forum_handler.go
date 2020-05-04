@@ -24,6 +24,8 @@ func CreateHandler(router *echo.Echo, usecase forum.Usecase) {
 
 	router.POST("/api/forum/create", handler.Create, middleware.ReadBody, middleware.Headers)
 	router.GET("/api/forum/:slug/details", handler.Get, middleware.ReadForumSlug, middleware.Headers)
+	router.GET("/api/forum/:slug/threads", handler.GetThreads,
+		middleware.ReadForumSlug, middleware.ReadGetThreadsQuery, middleware.Headers)
 }
 
 func (forumHandler *ForumHandler) Create(ctx echo.Context) error {
@@ -69,6 +71,24 @@ func (forumHandler *ForumHandler) Get(ctx echo.Context) error {
 	}
 
 	response, err := forum.MarshalJSON()
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+	return ctx.String(http.StatusOK, string(response))
+}
+
+func (forumHandler *ForumHandler) GetThreads(ctx echo.Context) error {
+	query := ctx.Get("threadsQuery").(models.GetThreadsQuery)
+
+	forumSlug := ctx.Get("slug").(string)
+	threads, err := forumHandler.Usecase.GetThreadsBySlug(forumSlug, query)
+	if err != nil {
+		log.Error(err)
+		return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+	}
+
+	response, err := (*threads).MarshalJSON()
 	if err != nil {
 		log.Error(err)
 		return ctx.NoContent(http.StatusInternalServerError)

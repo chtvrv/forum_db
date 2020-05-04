@@ -1,10 +1,13 @@
 package repository
 
 import (
+	"fmt"
+
 	"github.com/chtvrv/forum_db/app/forum"
 	"github.com/chtvrv/forum_db/app/models"
 	"github.com/chtvrv/forum_db/pkg/errors"
 	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/pgtype"
 	"github.com/labstack/gommon/log"
 )
 
@@ -61,4 +64,55 @@ func (forumStore *ForumStore) GetForumBySlug(slug string) (*models.Forum, error)
 	}
 
 	return &forum, nil
+}
+
+func (forumStore *ForumStore) GetThreadsBySlug(slug string, query models.GetThreadsQuery) (*models.Threads, error) {
+	dbQuery := CreateThreadsQuery(query)
+	result, err := forumStore.dbConn.Query(dbQuery, slug)
+	if err != nil {
+		log.Error(err)
+		return nil, errors.ErrInternal
+	}
+
+	defer result.Close()
+
+	var threads models.Threads
+	for result.Next() {
+		var thread models.Thread
+		slug := &pgtype.Varchar{}
+
+		err := result.Scan(&thread.ID, &thread.Title, &thread.Author, &thread.Forum, &thread.Message, &thread.Votes, slug, &thread.Created)
+		if err != nil {
+			log.Error(err)
+			return nil, errors.ErrInternal
+
+		}
+
+		thread.Slug = slug.String
+		threads = append(threads, thread)
+	}
+
+	return &threads, nil
+}
+
+func CreateThreadsQuery(threadsQuery models.GetThreadsQuery) string {
+	sinceToken := ``
+	sortToken := ` ORDER BY created`
+	limitToken := fmt.Sprintf(` LIMIT %d`, threadsQuery.Limit)
+
+	if threadsQuery.Since != "" {
+		sinceToken = ` AND created `
+		if threadsQuery.Desc {
+			sinceToken += `<= `
+		} else {
+			sinceToken += `>= `
+		}
+		sinceToken += `'` + threadsQuery.Since + `'`
+	}
+
+	if threadsQuery.Desc {
+		sortToken += ` DESC`
+	}
+
+	return `SELECT * FROM threads WHERE forum = $1` + sinceToken + sortToken + limitToken
 }

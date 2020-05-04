@@ -47,3 +47,12 @@ func (usecase *ThreadUsecase) Create(thread *models.Thread) error {
 	}
 	return nil
 }
+
+func (usecase *ThreadUsecase) GetThreadBySlug(slug string) (*models.Thread, error) {
+	thread, err := usecase.threadRepo.GetThreadBySlug(slug)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return thread, nil
+}

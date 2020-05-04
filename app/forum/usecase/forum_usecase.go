@@ -46,3 +46,19 @@ func (usecase *ForumUsecase) GetForumBySlug(slug string) (*models.Forum, error) 
 	}
 	return forum, nil
 }
+
+func (usecase *ForumUsecase) GetThreadsBySlug(slug string, query models.GetThreadsQuery) (*models.Threads, error) {
+	forum, err := usecase.GetForumBySlug(slug)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	threads, err := usecase.forumRepo.GetThreadsBySlug(forum.Slug, query)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return threads, nil
+}

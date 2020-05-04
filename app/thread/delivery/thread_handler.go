@@ -23,7 +23,6 @@ func CreateHandler(router *echo.Echo, usecase thread.Usecase) {
 	}
 
 	router.POST("/api/forum/:slug/create", handler.Create, middleware.ReadBody, middleware.ReadForumSlug, middleware.Headers)
-	// router.GET("/api/forum/:slug/details", handler.Get, middleware.ReadForumSlug, middleware.Headers)
 }
 
 func (threadHandler *ThreadHandler) Create(ctx echo.Context) error {
@@ -46,16 +45,16 @@ func (threadHandler *ThreadHandler) Create(ctx echo.Context) error {
 		}
 		return ctx.String(http.StatusCreated, string(response))
 	}
-	// // Конфликт
-	// if err == errors.ErrConflict {
-	// 	previousForum, _ := threadHandler.Usecase.GetForumBySlug(forum.Slug)
-	// 	response, err := previousForum.MarshalJSON()
-	// 	if err != nil {
-	// 		log.Error(err)
-	// 		return ctx.NoContent(http.StatusInternalServerError)
-	// 	}
-	// 	return ctx.String(http.StatusConflict, string(response))
-	// }
+	// Конфликт
+	if err == errors.ErrConflict {
+		previousThread, _ := threadHandler.Usecase.GetThreadBySlug(thread.Slug)
+		response, err := previousThread.MarshalJSON()
+		if err != nil {
+			log.Error(err)
+			return ctx.NoContent(http.StatusInternalServerError)
+		}
+		return ctx.String(http.StatusConflict, string(response))
+	}
 	// Незарегистрированная ошибка
 	log.Error(err)
 	return ctx.String(errors.ResolveErrorToCode(err), err.Error())
