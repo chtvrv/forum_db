@@ -1,6 +1,8 @@
 package usecase
 
 import (
+	"strconv"
+
 	"github.com/chtvrv/forum_db/app/forum"
 	"github.com/chtvrv/forum_db/app/models"
 	"github.com/chtvrv/forum_db/app/thread"
@@ -55,4 +57,32 @@ func (usecase *ThreadUsecase) GetThreadBySlug(slug string) (*models.Thread, erro
 		return nil, err
 	}
 	return thread, nil
+}
+
+func (usecase *ThreadUsecase) VoteForThread(vote *models.Vote, threadIdentifier string) (*models.Thread, error, *errors.Message) {
+	var thread *models.Thread
+	threadID, err := strconv.Atoi(threadIdentifier)
+	if err == nil {
+		thread, err = usecase.threadRepo.GetThreadByID(threadID)
+	} else {
+		thread, err = usecase.threadRepo.GetThreadBySlug(threadIdentifier)
+	}
+	if thread == nil {
+		return nil, errors.ErrNoRows, errors.CreateMessageNotFoundThreadPost(threadID)
+	}
+
+	vote.Thread = thread.ID
+	err, msg := usecase.threadRepo.VoteForThread(vote)
+	if err != nil {
+		log.Error(err)
+		return nil, err, msg
+	}
+
+	updatedThread, err := usecase.threadRepo.GetThreadByID(thread.ID)
+	if err != nil {
+		log.Error(err)
+		return nil, err, nil
+	}
+
+	return updatedThread, nil, nil
 }

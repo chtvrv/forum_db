@@ -108,6 +108,10 @@ func easyjsonC8d74561DecodeGithubComChtvrvForumDbAppModels1(in *jlexer.Lexer, ou
 			out.User = string(in.String())
 		case "slug":
 			out.Slug = string(in.String())
+		case "posts":
+			out.Posts = int(in.Int())
+		case "threads":
+			out.Threads = int(in.Int())
 		default:
 			in.SkipRecursive()
 		}
@@ -136,6 +140,16 @@ func easyjsonC8d74561EncodeGithubComChtvrvForumDbAppModels1(out *jwriter.Writer,
 		const prefix string = ",\"slug\":"
 		out.RawString(prefix)
 		out.String(string(in.Slug))
+	}
+	if in.Posts != 0 {
+		const prefix string = ",\"posts\":"
+		out.RawString(prefix)
+		out.Int(int(in.Posts))
+	}
+	if in.Threads != 0 {
+		const prefix string = ",\"threads\":"
+		out.RawString(prefix)
+		out.Int(int(in.Threads))
 	}
 	out.RawByte('}')
 }

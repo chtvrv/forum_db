@@ -8,4 +8,5 @@ import (
 type Usecase interface {
 	Create(thread *models.Thread) (error, *errors.Message)
 	GetThreadBySlug(slug string) (*models.Thread, error)
+	VoteForThread(vote *models.Vote, threadIdentifier string) (*models.Thread, error, *errors.Message)
 }

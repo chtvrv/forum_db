@@ -53,6 +53,7 @@ create table posts (
     path       integer[]      default array[]::integer[]
 );
 
+/* ГОЛОС ПОЛЬЗОВАТЕЛЯ */
 drop table if exists votes cascade;
 create table votes (
     nickname citext   not null references users (nickname) collate "C",

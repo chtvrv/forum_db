@@ -23,6 +23,7 @@ func CreateHandler(router *echo.Echo, usecase thread.Usecase) {
 	}
 
 	router.POST("/api/forum/:slug/create", handler.Create, middleware.ReadBody, middleware.ReadForumSlug, middleware.Headers)
+	router.POST("api/thread/:slug_or_id/vote", handler.VoteForThread, middleware.ReadBody, middleware.ReadThreadIdentifier, middleware.Headers)
 }
 
 func (threadHandler *ThreadHandler) Create(ctx echo.Context) error {
@@ -58,4 +59,29 @@ func (threadHandler *ThreadHandler) Create(ctx echo.Context) error {
 	// Незарегистрированная ошибка
 	log.Error(err)
 	return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
+}
+
+func (threadHandler *ThreadHandler) VoteForThread(ctx echo.Context) error {
+	var vote models.Vote
+	voteBody := ctx.Get("body").([]byte)
+	err := vote.UnmarshalJSON(voteBody)
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+
+	slugOrID := ctx.Get("SlugOrID").(string)
+
+	thread, err, msg := threadHandler.Usecase.VoteForThread(&vote, slugOrID)
+	if err != nil {
+		log.Error(err)
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
+	}
+
+	response, err := thread.MarshalJSON()
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+	return ctx.String(http.StatusOK, string(response))
 }

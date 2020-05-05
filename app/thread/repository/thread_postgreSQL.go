@@ -73,3 +73,42 @@ func (threadStore *ThreadStore) GetThreadByID(id int) (*models.Thread, error) {
 
 	return &thread, nil
 }
+
+func (threadStore *ThreadStore) VoteForThread(vote *models.Vote) (error, *errors.Message) {
+	var oldVote models.Vote
+	result, err := threadStore.dbConn.Query(`SELECT voice FROM votes WHERE nickname = $1 AND thread = $2`, vote.Nickname, vote.Thread)
+	defer result.Close()
+
+	// Голос уже существует, обновляем его
+	if err == nil && result.Next() {
+		result.Scan(&oldVote.Voice)
+		if oldVote.Voice == vote.Voice {
+			return nil, nil
+		}
+
+		_, err := threadStore.dbConn.Exec(`UPDATE votes SET voice = $1 WHERE nickname = $2 AND thread = $3`, vote.Voice, vote.Nickname, vote.Thread)
+		if err != nil {
+			log.Error(err)
+			return errors.ErrInternal, nil
+		}
+
+		// Для пересчёта разницы при обновлении threads таблицы
+		vote.Voice *= 2
+
+		// Голосуем впервые
+	} else {
+		_, err := threadStore.dbConn.Exec(`INSERT INTO votes (nickname, voice, thread) VALUES ($1, $2, $3)`, vote.Nickname, vote.Voice, vote.Thread)
+		if err != nil {
+			log.Error(err)
+			return errors.ErrInternal, nil
+		}
+	}
+
+	_, err = threadStore.dbConn.Exec(`UPDATE threads SET votes = votes + $1 WHERE id = $2`, vote.Voice, vote.Thread)
+	if err != nil {
+		log.Error(err)
+		return errors.ErrInternal, nil
+	}
+
+	return nil, nil
+}
