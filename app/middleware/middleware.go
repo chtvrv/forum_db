@@ -91,3 +91,35 @@ func ReadGetThreadsQuery(next echo.HandlerFunc) echo.HandlerFunc {
 		return next(ctx)
 	}
 }
+
+func ReadGetPostsQuery(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		postsQuery := models.CreateGetPostsQuery()
+
+		var limit uint
+		_, err := fmt.Sscan(ctx.QueryParam("limit"), &limit)
+		if err == nil {
+			postsQuery.Limit = limit
+		}
+
+		since := ctx.QueryParam("since")
+		if since != "" {
+			postsQuery.Since = since
+		}
+
+		var desc bool
+		_, err = fmt.Sscan(ctx.QueryParam("desc"), &desc)
+		if err == nil {
+			postsQuery.Desc = desc
+		}
+
+		sort := ctx.QueryParam("sort")
+		if sort != "" {
+			postsQuery.Sort = sort
+		}
+
+		ctx.Set("postsQuery", postsQuery)
+
+		return next(ctx)
+	}
+}

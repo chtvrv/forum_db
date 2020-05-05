@@ -1,11 +1,14 @@
 package repository
 
 import (
+	"fmt"
+
 	"github.com/chtvrv/forum_db/app/models"
 	"github.com/chtvrv/forum_db/app/thread"
 	"github.com/chtvrv/forum_db/pkg/errors"
 	"github.com/jackc/pgx"
 	"github.com/labstack/gommon/log"
+	"github.com/lib/pq"
 )
 
 type ThreadStore struct {
@@ -110,5 +113,136 @@ func (threadStore *ThreadStore) VoteForThread(vote *models.Vote) (error, *errors
 		return errors.ErrInternal, nil
 	}
 
+	return nil, nil
+}
+
+func (threadStore *ThreadStore) GetPostsByThread(thread *models.Thread, query models.GetPostsQuery) (*models.Posts, error, *errors.Message) {
+	var dbQuery string
+	if query.Sort == "flat" {
+		dbQuery = CreatePostsFlatQuery(query)
+	} else if query.Sort == "tree" {
+		dbQuery = CreatePostsTreeQuery(query)
+	} else {
+		dbQuery = CreatePostsParentTreeQuery(query)
+	}
+
+	result, err := threadStore.dbConn.Query(dbQuery, thread.ID)
+	defer result.Close()
+	if err != nil {
+		log.Error(err)
+		return nil, err, nil
+	}
+
+	posts := make(models.Posts, 0)
+	for result.Next() {
+		var post models.Post
+
+		err := result.Scan(&post.ID, &post.Parent, &post.Author, &post.Message, &post.IsEdited, &post.Forum,
+			&post.Thread, &post.Created, pq.Array(&post.Path))
+		if err != nil {
+			log.Error(err)
+			return nil, errors.ErrInternal, nil
+		}
+		posts = append(posts, post)
+	}
+
+	return &posts, nil, nil
+}
+
+func CreatePostsFlatQuery(postsQuery models.GetPostsQuery) string {
+	sinceToken := ``
+	sortToken := ` ORDER BY id`
+	limitToken := fmt.Sprintf(` LIMIT %d`, postsQuery.Limit)
+
+	if postsQuery.Since != "" {
+		sinceToken = ` AND id `
+		if postsQuery.Desc {
+			sinceToken += `< `
+		} else {
+			sinceToken += `> `
+		}
+		sinceToken += `'` + postsQuery.Since + `'`
+	}
+
+	if postsQuery.Desc {
+		sortToken += ` DESC`
+	}
+
+	return `SELECT * FROM posts WHERE thread = $1` + sinceToken + sortToken + limitToken
+}
+
+func CreatePostsTreeQuery(postsQuery models.GetPostsQuery) string {
+	sinceToken := ``
+	sortToken := ` ORDER BY`
+	limitToken := fmt.Sprintf(` LIMIT %d`, postsQuery.Limit)
+
+	if postsQuery.Since != "" {
+		sinceToken = ` AND path `
+		if postsQuery.Desc {
+			sinceToken += `< `
+		} else {
+			sinceToken += `> `
+		}
+		sinceToken += "(SELECT path FROM posts WHERE id = " + postsQuery.Since + `)`
+	}
+
+	if postsQuery.Desc {
+		sortToken += ` path DESC, id DESC`
+	} else {
+		sortToken += ` path, id`
+	}
+
+	return `SELECT * FROM posts WHERE thread = $1` + sinceToken + sortToken + limitToken
+}
+
+func CreatePostsParentTreeQuery(postsQuery models.GetPostsQuery) string {
+	sinceToken := ``
+	sortTokenInner := ` ORDER BY id`
+	sortTokenExternal := ` ORDER BY`
+	limitToken := fmt.Sprintf(` LIMIT %d`, postsQuery.Limit)
+
+	if postsQuery.Since != "" {
+		sinceToken = ` AND path[1] `
+		if postsQuery.Desc {
+			sinceToken += `< `
+		} else {
+			sinceToken += `> `
+		}
+		sinceToken += "(SELECT path[1] FROM posts WHERE id = " + postsQuery.Since + `)`
+	}
+
+	if postsQuery.Desc {
+		sortTokenInner += ` DESC`
+		sortTokenExternal += ` path[1] DESC, path, id`
+	} else {
+		sortTokenExternal += ` path`
+	}
+
+	return `SELECT * FROM posts WHERE path[1] IN (SELECT id FROM posts WHERE thread = $1 AND parent = 0` + sinceToken +
+		sortTokenInner + limitToken + ")" + sortTokenExternal
+}
+
+func (threadStore *ThreadStore) UpdateThread(updatedThread *models.Thread, oldThread *models.Thread) (error, *errors.Message) {
+	if updatedThread.Title == "" && updatedThread.Message == "" {
+		*updatedThread = *oldThread
+		return nil, nil
+	}
+
+	if updatedThread.Title != "" {
+		oldThread.Title = updatedThread.Title
+	}
+
+	if updatedThread.Message != "" {
+		oldThread.Message = updatedThread.Message
+	}
+
+	_, err := threadStore.dbConn.Exec("UPDATE threads SET title = $1, message = $2 WHERE id = $3",
+		oldThread.Title, oldThread.Message, oldThread.ID)
+	if err != nil {
+		log.Error(err)
+		return err, nil
+	}
+
+	*updatedThread = *oldThread
 	return nil, nil
 }

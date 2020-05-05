@@ -50,6 +50,21 @@ func (usecase *ThreadUsecase) Create(thread *models.Thread) (error, *errors.Mess
 	return nil, nil
 }
 
+func (usecase *ThreadUsecase) GetThreadByIdentifier(identifier string) (*models.Thread, error, *errors.Message) {
+	var thread *models.Thread
+	threadID, err := strconv.Atoi(identifier)
+	if err == nil {
+		thread, err = usecase.threadRepo.GetThreadByID(threadID)
+	} else {
+		thread, err = usecase.threadRepo.GetThreadBySlug(identifier)
+	}
+	if thread == nil {
+		return nil, errors.ErrNoRows, errors.CreateMessageNotFoundThreadPost(threadID)
+	}
+
+	return thread, nil, nil
+}
+
 func (usecase *ThreadUsecase) GetThreadBySlug(slug string) (*models.Thread, error) {
 	thread, err := usecase.threadRepo.GetThreadBySlug(slug)
 	if err != nil {
@@ -85,4 +100,45 @@ func (usecase *ThreadUsecase) VoteForThread(vote *models.Vote, threadIdentifier 
 	}
 
 	return updatedThread, nil, nil
+}
+
+func (usecase *ThreadUsecase) GetPostsByIdentifier(threadIdentifier string, query models.GetPostsQuery) (*models.Posts, error, *errors.Message) {
+	var thread *models.Thread
+	threadID, err := strconv.Atoi(threadIdentifier)
+	if err == nil {
+		thread, err = usecase.threadRepo.GetThreadByID(threadID)
+	} else {
+		thread, err = usecase.threadRepo.GetThreadBySlug(threadIdentifier)
+	}
+	if thread == nil {
+		return nil, errors.ErrNoRows, errors.CreateMessageNotFoundThreadPost(threadID)
+	}
+
+	posts, err, msg := usecase.threadRepo.GetPostsByThread(thread, query)
+	if err != nil {
+		log.Error(err)
+		return nil, err, msg
+	}
+
+	return posts, nil, nil
+}
+
+func (usecase *ThreadUsecase) UpdateThread(threadIdentifier string, updatedThread *models.Thread) (error, *errors.Message) {
+	var oldThread *models.Thread
+	threadID, err := strconv.Atoi(threadIdentifier)
+	if err == nil {
+		oldThread, err = usecase.threadRepo.GetThreadByID(threadID)
+	} else {
+		oldThread, err = usecase.threadRepo.GetThreadBySlug(threadIdentifier)
+	}
+	if oldThread == nil {
+		return errors.ErrNoRows, errors.CreateMessageNotFoundThreadPost(threadID)
+	}
+
+	err, msg := usecase.threadRepo.UpdateThread(updatedThread, oldThread)
+	if err != nil {
+		log.Error(err)
+		return err, msg
+	}
+	return nil, nil
 }
