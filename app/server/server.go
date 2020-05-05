@@ -61,7 +61,7 @@ func (server *Server) Run() {
 
 	// Пост
 	pRepository := postRepository.CreateRepository(postgresConn)
-	pUsecase := postUsecase.CreateUsecase(pRepository, tRepository)
+	pUsecase := postUsecase.CreateUsecase(pRepository, tRepository, fRepository, uRepository)
 	postHandler.CreateHandler(router, pUsecase)
 
 	if err := router.Start(server.configReader.GetServerConn()); err != nil {

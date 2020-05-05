@@ -29,3 +29,17 @@ func CreateGetPostsQuery() GetPostsQuery {
 		Sort:  "flat",
 	}
 }
+
+type FullPostQuery struct {
+	User   bool
+	Forum  bool
+	Thread bool
+}
+
+func CreateFullPostQuery() FullPostQuery {
+	return FullPostQuery{
+		User:   false,
+		Forum:  false,
+		Thread: false,
+	}
+}

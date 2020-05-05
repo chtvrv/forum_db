@@ -48,12 +48,12 @@ func (postStore *PostStore) Create(posts *models.Posts, thread *models.Thread) (
 		result, err := postStore.dbConn.Exec(`INSERT INTO posts (id, parent, author, message, forum, thread, created, path) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
 			post.ID, post.Parent, post.Author, post.Message, post.Forum, post.Thread, post.Created, pq.Array(post.Path))
 		if err != nil || result.RowsAffected() == 0 {
-			//return models.CreateNotFoundAuthorPost(post.Author)
-			return errors.ErrInternal, nil
+			log.Error(err)
+			return errors.ErrNoRows, errors.CreateNotFoundAuthorPost(post.Author)
 		}
 
-		_, _ = postStore.dbConn.Exec(`INSERT INTO user_forum (nickname, slug) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-			post.Author, thread.Forum)
+		_, _ = postStore.dbConn.Exec(`INSERT INTO forum_user (slug, nickname) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+			thread.Forum, post.Author)
 	}
 
 	result, err := postStore.dbConn.Exec(`UPDATE forums SET posts = posts + $1 WHERE slug = $2`, len(*posts), thread.Forum)
@@ -116,4 +116,24 @@ func (postStore *PostStore) GeneratePostIDSequence(sequenceLength int) *[]int {
 	}
 
 	return &generatedIDs
+}
+
+func (postStore *PostStore) UpdatePost(updatedPost *models.Post, oldPost *models.Post) (error, *errors.Message) {
+	if updatedPost.Message == "" || updatedPost.Message == oldPost.Message {
+		*updatedPost = *oldPost
+		return nil, nil
+	}
+
+	oldPost.Message = updatedPost.Message
+	oldPost.IsEdited = true
+
+	_, err := postStore.dbConn.Exec("UPDATE posts SET message = $1, is_edited = $2 WHERE id = $3",
+		oldPost.Message, oldPost.IsEdited, oldPost.ID)
+	if err != nil {
+		log.Error(err)
+		return err, nil
+	}
+
+	*updatedPost = *oldPost
+	return nil, nil
 }

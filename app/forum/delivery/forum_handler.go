@@ -26,6 +26,8 @@ func CreateHandler(router *echo.Echo, usecase forum.Usecase) {
 	router.GET("/api/forum/:slug/details", handler.Get, middleware.ReadForumSlug, middleware.Headers)
 	router.GET("/api/forum/:slug/threads", handler.GetThreads,
 		middleware.ReadForumSlug, middleware.ReadGetThreadsQuery, middleware.Headers)
+	router.GET("/api/forum/:slug/users", handler.GetUsers,
+		middleware.ReadForumSlug, middleware.ReadGetThreadsQuery, middleware.Headers)
 }
 
 func (forumHandler *ForumHandler) Create(ctx echo.Context) error {
@@ -93,6 +95,25 @@ func (forumHandler *ForumHandler) GetThreads(ctx echo.Context) error {
 	}
 
 	response, err := (*threads).MarshalJSON()
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+
+	return ctx.String(http.StatusOK, string(response))
+}
+
+func (forumHandler *ForumHandler) GetUsers(ctx echo.Context) error {
+	query := ctx.Get("threadsQuery").(models.GetThreadsQuery)
+
+	forumSlug := ctx.Get("slug").(string)
+	users, err, msg := forumHandler.Usecase.GetUsersBySlug(forumSlug, query)
+	if err != nil {
+		log.Error(err)
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
+	}
+
+	response, err := (*users).MarshalJSON()
 	if err != nil {
 		log.Error(err)
 		return ctx.NoContent(http.StatusInternalServerError)

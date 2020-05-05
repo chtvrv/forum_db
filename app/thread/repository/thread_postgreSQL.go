@@ -30,7 +30,15 @@ func (threadStore *ThreadStore) Create(thread *models.Thread) error {
 			thread.Title, thread.Author, thread.Forum, thread.Message, thread.Created, thread.Slug).Scan(&thread.ID)
 	}
 
-	result, err := threadStore.dbConn.Exec(`UPDATE forums SET threads = threads + $1 WHERE slug = $2`, 1, thread.Forum)
+	result, err := threadStore.dbConn.Exec(`INSERT INTO forum_user (slug, nickname) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+		thread.Forum, thread.Author)
+
+	if err != nil {
+		log.Error(err)
+		return errors.ErrConflict
+	}
+
+	result, err = threadStore.dbConn.Exec(`UPDATE forums SET threads = threads + $1 WHERE slug = $2`, 1, thread.Forum)
 	if err != nil || result.RowsAffected() == 0 {
 		return errors.ErrInternal
 	}

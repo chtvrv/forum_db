@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/chtvrv/forum_db/app/models"
 	"github.com/labstack/echo/v4"
@@ -120,6 +121,43 @@ func ReadGetPostsQuery(next echo.HandlerFunc) echo.HandlerFunc {
 
 		ctx.Set("postsQuery", postsQuery)
 
+		return next(ctx)
+	}
+}
+
+func ReadFullPostQuery(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		fullPostQuery := models.CreateFullPostQuery()
+
+		query := strings.Split(ctx.QueryParam("related"), ",")
+		for _, param := range query {
+			if param == "user" {
+				fullPostQuery.User = true
+				continue
+			}
+			if param == "forum" {
+				fullPostQuery.Forum = true
+				continue
+			}
+			if param == "thread" {
+				fullPostQuery.Thread = true
+				continue
+			}
+		}
+
+		ctx.Set("fullPostQuery", fullPostQuery)
+		return next(ctx)
+	}
+}
+
+func ReadPostID(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		var id int
+		_, err := fmt.Sscan(ctx.Param("id"), &id)
+		if err != nil {
+			return ctx.NoContent(http.StatusBadRequest)
+		}
+		ctx.Set("id", id)
 		return next(ctx)
 	}
 }

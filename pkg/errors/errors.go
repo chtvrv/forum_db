@@ -51,6 +51,12 @@ func CreateMessageNotFoundThreadForum(slug string) *Message {
 	}
 }
 
+func CreateNotFoundAuthorPost(nickname string) *Message {
+	return &Message{
+		message: "Can't find post author by nickname: " + nickname,
+	}
+}
+
 const (
 	Internal     = "Internal error"
 	Conflict     = "Conflict with exists data"

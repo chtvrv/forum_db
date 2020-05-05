@@ -23,6 +23,8 @@ func CreateHandler(router *echo.Echo, usecase post.Usecase) {
 	}
 
 	router.POST("/api/thread/:slug_or_id/create", handler.Create, middleware.ReadBody, middleware.ReadThreadIdentifier, middleware.Headers)
+	router.GET("/api/post/:id/details", handler.GetFullPost, middleware.ReadPostID, middleware.ReadFullPostQuery, middleware.Headers)
+	router.POST("/api/post/:id/details", handler.UpdatePost, middleware.ReadPostID, middleware.ReadBody, middleware.Headers)
 }
 
 func (postHandler *PostHandler) Create(ctx echo.Context) error {
@@ -59,4 +61,42 @@ func (postHandler *PostHandler) Create(ctx echo.Context) error {
 	// // Незарегистрированная ошибка
 	log.Error(err)
 	return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
+}
+
+func (postHandler *PostHandler) GetFullPost(ctx echo.Context) error {
+	fullPostQuery := ctx.Get("fullPostQuery").(models.FullPostQuery)
+	postID := ctx.Get("id").(int)
+
+	fullInfo, err := postHandler.Usecase.GetFullPost(postID, fullPostQuery)
+	if err != nil {
+		log.Error(err)
+		return ctx.JSON(errors.ResolveErrorToCode(err), err.Error())
+	}
+	return ctx.JSON(http.StatusOK, fullInfo)
+}
+
+func (postHandler *PostHandler) UpdatePost(ctx echo.Context) error {
+	var post models.Post
+	postBody := ctx.Get("body").([]byte)
+	err := post.UnmarshalJSON(postBody)
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+
+	post.ID = ctx.Get("id").(int)
+
+	err, msg := postHandler.Usecase.UpdatePost(&post)
+	if err != nil {
+		log.Error(err)
+		//return ctx.JSON(errors.ResolveErrorToCode(err), err.Error())
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
+	}
+
+	response, err := post.MarshalJSON()
+	if err != nil {
+		log.Error(err)
+		return ctx.NoContent(http.StatusInternalServerError)
+	}
+	return ctx.String(http.StatusOK, string(response))
 }

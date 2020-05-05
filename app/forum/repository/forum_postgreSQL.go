@@ -33,13 +33,13 @@ func (forumStore *ForumStore) Create(forum *models.Forum) error {
 		return errors.ErrConflict
 	}
 
-	result, err = forumStore.dbConn.Exec(`INSERT INTO forum_user (slug, nickname) VALUES ($1, $2)`,
-		forum.Slug, forum.User)
+	// result, err = forumStore.dbConn.Exec(`INSERT INTO forum_user (slug, nickname) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+	// 	forum.Slug, forum.User)
 
-	if err != nil {
-		log.Error(err)
-		return errors.ErrConflict
-	}
+	// if err != nil {
+	// 	log.Error(err)
+	// 	return errors.ErrConflict
+	// }
 
 	if result.RowsAffected() != 1 {
 		log.Error("Forum data collision on create")
@@ -95,6 +95,33 @@ func (forumStore *ForumStore) GetThreadsBySlug(slug string, query models.GetThre
 	return &threads, nil
 }
 
+func (forumStore *ForumStore) GetUsersBySlug(slug string, query models.GetThreadsQuery) (*models.Users, error) {
+	dbQuery := CreateUsersQuery(query)
+	result, err := forumStore.dbConn.Query(dbQuery, slug)
+	if err != nil {
+		log.Error(err)
+		return nil, errors.ErrInternal
+	}
+
+	defer result.Close()
+
+	users := make(models.Users, 0)
+	for result.Next() {
+		var user models.User
+
+		err := result.Scan(&user.Nickname, &user.Fullname, &user.Email, &user.About)
+		if err != nil {
+			log.Error(err)
+			return nil, errors.ErrInternal
+
+		}
+
+		users = append(users, user)
+	}
+
+	return &users, nil
+}
+
 func CreateThreadsQuery(threadsQuery models.GetThreadsQuery) string {
 	sinceToken := ``
 	sortToken := ` ORDER BY created`
@@ -115,4 +142,27 @@ func CreateThreadsQuery(threadsQuery models.GetThreadsQuery) string {
 	}
 
 	return `SELECT * FROM threads WHERE forum = $1` + sinceToken + sortToken + limitToken
+}
+
+func CreateUsersQuery(usersQuery models.GetThreadsQuery) string {
+	sinceToken := ``
+	sortToken := ` ORDER BY nickname`
+	limitToken := fmt.Sprintf(` LIMIT %d`, usersQuery.Limit)
+
+	if usersQuery.Since != "" {
+		sinceToken = ` AND nickname `
+		if usersQuery.Desc {
+			sinceToken += `< `
+		} else {
+			sinceToken += `> `
+		}
+		sinceToken += `'` + usersQuery.Since + `'`
+	}
+
+	if usersQuery.Desc {
+		sortToken += ` DESC`
+	}
+
+	return `SELECT nickname, fullname, email, about FROM users JOIN forum_user USING(nickname)
+		WHERE slug = $1` + sinceToken + sortToken + limitToken
 }

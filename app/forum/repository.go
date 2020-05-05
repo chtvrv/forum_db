@@ -8,4 +8,5 @@ type Repository interface {
 	Create(forum *models.Forum) error
 	GetForumBySlug(slug string) (*models.Forum, error)
 	GetThreadsBySlug(slug string, query models.GetThreadsQuery) (*models.Threads, error)
+	GetUsersBySlug(slug string, query models.GetThreadsQuery) (*models.Users, error)
 }
