@@ -46,6 +46,18 @@ func ReadForumSlug(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
+func ReadThreadIdentifier(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(ctx echo.Context) error {
+		var slugOrID string
+		_, err := fmt.Sscan(ctx.Param("slug_or_id"), &slugOrID)
+		if err != nil {
+			return ctx.NoContent(http.StatusBadRequest)
+		}
+		ctx.Set("SlugOrID", slugOrID)
+		return next(ctx)
+	}
+}
+
 func Headers(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(ctx echo.Context) error {
 		ctx.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)

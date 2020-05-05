@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"net/http"
+	"strconv"
 )
 
 type Message struct {
@@ -23,7 +24,30 @@ func CreateMessageConflictEmail(nickname string) *Message {
 
 func CreateMessageNotFoundForum(slug string) *Message {
 	return &Message{
-		message: "Can't find forum with slug: 1e_gBYzSkiams: " + slug,
+		message: "Can't find forum with slug: " + slug,
+	}
+}
+func CreateMessageConflictCreatePost() *Message {
+	return &Message{
+		message: "Parent post was created in another thread",
+	}
+}
+
+func CreateMessageNotFoundThreadPost(id int) *Message {
+	return &Message{
+		message: "Can't find post thread by id: " + strconv.Itoa(id),
+	}
+}
+
+func CreateMessageNotFoundThreadAuthor(nickname string) *Message {
+	return &Message{
+		message: "Can't find thread author by nickname: " + nickname,
+	}
+}
+
+func CreateMessageNotFoundThreadForum(slug string) *Message {
+	return &Message{
+		message: "Can't find thread forum by slug: " + slug,
 	}
 }
 

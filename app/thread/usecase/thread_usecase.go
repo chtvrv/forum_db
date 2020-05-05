@@ -19,33 +19,33 @@ func CreateUsecase(threadRepo_ thread.Repository, userRepo_ user.Repository, for
 	return &ThreadUsecase{threadRepo: threadRepo_, userRepo: userRepo_, forumRepo: forumRepo_}
 }
 
-func (usecase *ThreadUsecase) Create(thread *models.Thread) error {
+func (usecase *ThreadUsecase) Create(thread *models.Thread) (error, *errors.Message) {
 	_, err := usecase.userRepo.GetUserByNickname(thread.Author)
 	if err != nil {
 		log.Error(err)
-		return err
+		return err, errors.CreateMessageNotFoundThreadAuthor(thread.Author)
 	}
 
-	_, err = usecase.forumRepo.GetForumBySlug(thread.Forum)
+	prevForum, err := usecase.forumRepo.GetForumBySlug(thread.Forum)
 	if err != nil {
 		log.Error(err)
-		return err
+		return err, errors.CreateMessageNotFoundThreadForum(thread.Forum)
 	}
 
 	if thread.Slug != "" {
 		oldThread, _ := usecase.threadRepo.GetThreadBySlug(thread.Slug)
 		if oldThread != nil {
 			log.Error("Thread slug conflict on thread create")
-			return errors.ErrConflict
+			return errors.ErrConflict, nil
 		}
 	}
-
+	thread.Forum = prevForum.Slug
 	err = usecase.threadRepo.Create(thread)
 	if err != nil {
 		log.Error(err)
-		return err
+		return err, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (usecase *ThreadUsecase) GetThreadBySlug(slug string) (*models.Thread, error) {

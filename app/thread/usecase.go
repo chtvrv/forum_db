@@ -2,9 +2,10 @@ package thread
 
 import (
 	"github.com/chtvrv/forum_db/app/models"
+	"github.com/chtvrv/forum_db/pkg/errors"
 )
 
 type Usecase interface {
-	Create(thread *models.Thread) error
+	Create(thread *models.Thread) (error, *errors.Message)
 	GetThreadBySlug(slug string) (*models.Thread, error)
 }

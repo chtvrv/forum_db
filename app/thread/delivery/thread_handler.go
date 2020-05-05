@@ -35,7 +35,7 @@ func (threadHandler *ThreadHandler) Create(ctx echo.Context) error {
 	}
 	thread.Forum = ctx.Get("slug").(string)
 
-	err = threadHandler.Usecase.Create(&thread)
+	err, msg := threadHandler.Usecase.Create(&thread)
 	// Успешно создали
 	if err == nil {
 		response, err := thread.MarshalJSON()
@@ -57,5 +57,5 @@ func (threadHandler *ThreadHandler) Create(ctx echo.Context) error {
 	}
 	// Незарегистрированная ошибка
 	log.Error(err)
-	return ctx.String(errors.ResolveErrorToCode(err), err.Error())
+	return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
 }

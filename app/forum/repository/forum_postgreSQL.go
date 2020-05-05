@@ -20,8 +20,8 @@ func CreateRepository(dbConn_ *pgx.ConnPool) forum.Repository {
 }
 
 func (forumStore *ForumStore) Create(forum *models.Forum) error {
-	result, err := forumStore.dbConn.Exec(`INSERT INTO forums (title, usr, slug) VALUES ($1, $2, $3)`,
-		forum.Title, forum.User, forum.Slug)
+	result, err := forumStore.dbConn.Exec(`INSERT INTO forums (title, usr, slug, posts, threads) VALUES ($1, $2, $3, $4, $5)`,
+		forum.Title, forum.User, forum.Slug, forum.Posts, forum.Threads)
 
 	if err != nil {
 		log.Error(err)
@@ -52,7 +52,7 @@ func (forumStore *ForumStore) Create(forum *models.Forum) error {
 func (forumStore *ForumStore) GetForumBySlug(slug string) (*models.Forum, error) {
 	var forum models.Forum
 	err := forumStore.dbConn.QueryRow(`SELECT * FROM forums WHERE slug = $1`, slug).
-		Scan(&forum.Slug, &forum.Title, &forum.User)
+		Scan(&forum.Slug, &forum.Title, &forum.User, &forum.Posts, &forum.Threads)
 
 	if err != nil && err != pgx.ErrNoRows {
 		log.Error(err)
