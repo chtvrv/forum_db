@@ -23,6 +23,10 @@ import (
 	postRepository "github.com/chtvrv/forum_db/app/post/repository"
 	postUsecase "github.com/chtvrv/forum_db/app/post/usecase"
 
+	serviceHandler "github.com/chtvrv/forum_db/app/service/delivery"
+	serviceRepository "github.com/chtvrv/forum_db/app/service/repository"
+	serviceUsecase "github.com/chtvrv/forum_db/app/service/usecase"
+
 	config "github.com/chtvrv/forum_db/pkg/config"
 )
 
@@ -63,6 +67,11 @@ func (server *Server) Run() {
 	pRepository := postRepository.CreateRepository(postgresConn)
 	pUsecase := postUsecase.CreateUsecase(pRepository, tRepository, fRepository, uRepository)
 	postHandler.CreateHandler(router, pUsecase)
+
+	// Сервис
+	sRepository := serviceRepository.CreateRepository(postgresConn)
+	sUsecase := serviceUsecase.CreateUsecase(sRepository)
+	serviceHandler.CreateHandler(router, sUsecase)
 
 	if err := router.Start(server.configReader.GetServerConn()); err != nil {
 		log.Fatal(err)
