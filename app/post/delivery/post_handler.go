@@ -67,10 +67,10 @@ func (postHandler *PostHandler) GetFullPost(ctx echo.Context) error {
 	fullPostQuery := ctx.Get("fullPostQuery").(models.FullPostQuery)
 	postID := ctx.Get("id").(int)
 
-	fullInfo, err := postHandler.Usecase.GetFullPost(postID, fullPostQuery)
+	fullInfo, err, msg := postHandler.Usecase.GetFullPost(postID, fullPostQuery)
 	if err != nil {
 		log.Error(err)
-		return ctx.JSON(errors.ResolveErrorToCode(err), err.Error())
+		return ctx.JSON(errors.ResolveErrorToCode(err), *msg)
 	}
 	return ctx.JSON(http.StatusOK, fullInfo)
 }

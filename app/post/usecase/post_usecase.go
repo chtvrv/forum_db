@@ -44,14 +44,14 @@ func (usecase *PostUsecase) Create(posts *models.Posts, threadIdentifier string)
 	return nil, nil
 }
 
-func (usecase *PostUsecase) GetFullPost(postID int, query models.FullPostQuery) (*models.PostFullInfo, error) {
+func (usecase *PostUsecase) GetFullPost(postID int, query models.FullPostQuery) (*models.PostFullInfo, error, *errors.Message) {
 	var postFullInfo models.PostFullInfo
 	var err error
 
 	postFullInfo.Post, err = usecase.postRepo.GetPostByID(postID)
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return nil, err, errors.CreateNotFoundPost(strconv.Itoa(postID))
 	}
 
 	post := postFullInfo.Post
@@ -60,7 +60,7 @@ func (usecase *PostUsecase) GetFullPost(postID int, query models.FullPostQuery) 
 		postFullInfo.Author, err = usecase.userRepo.GetUserByNickname(post.Author)
 		if err != nil {
 			log.Error(err)
-			return nil, err
+			return nil, err, nil
 		}
 	}
 
@@ -68,7 +68,7 @@ func (usecase *PostUsecase) GetFullPost(postID int, query models.FullPostQuery) 
 		postFullInfo.Forum, err = usecase.forumRepo.GetForumBySlug(post.Forum)
 		if err != nil {
 			log.Error(err)
-			return nil, err
+			return nil, err, nil
 		}
 	}
 
@@ -76,11 +76,11 @@ func (usecase *PostUsecase) GetFullPost(postID int, query models.FullPostQuery) 
 		postFullInfo.Thread, err = usecase.threadRepo.GetThreadByID(post.Thread)
 		if err != nil {
 			log.Error(err)
-			return nil, err
+			return nil, err, nil
 		}
 	}
 
-	return &postFullInfo, nil
+	return &postFullInfo, nil, nil
 }
 
 func (usecase *PostUsecase) UpdatePost(updatedPost *models.Post) (error, *errors.Message) {
@@ -88,7 +88,7 @@ func (usecase *PostUsecase) UpdatePost(updatedPost *models.Post) (error, *errors
 
 	oldPost, err := usecase.postRepo.GetPostByID(updatedPost.ID)
 	if oldPost == nil {
-		return errors.ErrNoRows, errors.CreateMessageNotFoundThreadPost(oldPost.ID)
+		return errors.ErrNoRows, errors.CreateNotFoundPost(strconv.Itoa(updatedPost.ID))
 	}
 
 	err, msg := usecase.postRepo.UpdatePost(updatedPost, oldPost)

@@ -57,6 +57,12 @@ func CreateNotFoundAuthorPost(nickname string) *Message {
 	}
 }
 
+func CreateNotFoundPost(id string) *Message {
+	return &Message{
+		message: "Can't find post with id: " + id,
+	}
+}
+
 const (
 	Internal     = "Internal error"
 	Conflict     = "Conflict with exists data"

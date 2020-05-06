@@ -7,6 +7,6 @@ import (
 
 type Usecase interface {
 	Create(posts *models.Posts, threadIdentifier string) (error, *errors.Message)
-	GetFullPost(postID int, query models.FullPostQuery) (*models.PostFullInfo, error)
+	GetFullPost(postID int, query models.FullPostQuery) (*models.PostFullInfo, error, *errors.Message)
 	UpdatePost(updatedPost *models.Post) (error, *errors.Message)
 }

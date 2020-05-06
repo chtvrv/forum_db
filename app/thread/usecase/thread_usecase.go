@@ -75,6 +75,12 @@ func (usecase *ThreadUsecase) GetThreadBySlug(slug string) (*models.Thread, erro
 }
 
 func (usecase *ThreadUsecase) VoteForThread(vote *models.Vote, threadIdentifier string) (*models.Thread, error, *errors.Message) {
+	_, err := usecase.userRepo.GetUserByNickname(vote.Nickname)
+	if err != nil {
+		log.Error(err)
+		return nil, err, errors.CreateMessageNotFoundUser(vote.Nickname)
+	}
+
 	var thread *models.Thread
 	threadID, err := strconv.Atoi(threadIdentifier)
 	if err == nil {
