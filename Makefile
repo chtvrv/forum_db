@@ -2,6 +2,8 @@ PROJECT_DIR := ${CURDIR}
 DOCUMENTATION_CONTAINER_NAME=documentation_db
 DOCUMENTATION_FILE=swagger.yml
 
+docker-image-clean:
+	./scripts/clean_images.sh
 
 # кодогенерация
 easyjson:
