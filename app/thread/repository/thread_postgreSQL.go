@@ -7,6 +7,7 @@ import (
 	"github.com/chtvrv/forum_db/app/thread"
 	"github.com/chtvrv/forum_db/pkg/errors"
 	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/pgtype"
 	"github.com/labstack/gommon/log"
 	"github.com/lib/pq"
 )
@@ -70,8 +71,10 @@ func (threadStore *ThreadStore) GetThreadBySlug(slug string) (*models.Thread, er
 
 func (threadStore *ThreadStore) GetThreadByID(id int) (*models.Thread, error) {
 	var thread models.Thread
+	nullSlug := &pgtype.Varchar{}
+
 	err := threadStore.dbConn.QueryRow(`SELECT * FROM threads WHERE id = $1`, id).
-		Scan(&thread.ID, &thread.Title, &thread.Author, &thread.Forum, &thread.Message, &thread.Votes, &thread.Slug, &thread.Created)
+		Scan(&thread.ID, &thread.Title, &thread.Author, &thread.Forum, &thread.Message, &thread.Votes, nullSlug, &thread.Created)
 
 	if err != nil && err != pgx.ErrNoRows {
 		log.Error(err)
@@ -82,6 +85,7 @@ func (threadStore *ThreadStore) GetThreadByID(id int) (*models.Thread, error) {
 		return nil, errors.ErrNoRows
 	}
 
+	thread.Slug = nullSlug.String
 	return &thread, nil
 }
 
