@@ -9,6 +9,8 @@ create table users (
     email    citext    not null unique collate "C",
     about    text
 );
+create index if not exists id_users_nickname on users(nickname);
+create index if not exists id_users_email on users(email);
 
 /* ФОРУМ */
 drop table if exists forums cascade;
@@ -20,6 +22,8 @@ create table forums (
     posts   integer   not null default 0,
     threads integer   not null default 0
 );
+create index if not exists id_forum_user on forums(usr);
+
 create table forum_user (
     slug      citext not null references forums (slug) collate "C",
     nickname  citext not null references users (nickname) collate "C",
@@ -52,6 +56,8 @@ create table posts (
     created    timestamptz    default current_timestamp,
     path       integer[]      default array[]::integer[]
 );
+create index if not exists id_posts_path on posts(path);
+create index if not exists id_posts_thread on posts(thread);
 
 /* ГОЛОС ПОЛЬЗОВАТЕЛЯ */
 drop table if exists votes cascade;
